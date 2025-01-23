@@ -13,10 +13,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.conexionasincronakotlin2025.databinding.ActivityMainBinding
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+import kotlin.jvm.Throws
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var binding: ActivityMainBinding
@@ -51,12 +58,40 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     private fun OkHTTPdownload(web: URL) {
+        start = System.currentTimeMillis()
+        val client = OkHttpClient()
 
+        val request:Request = Request.Builder()
+            .url(web.toString())
+            .build()
 
+        client.newCall(request).enqueue(object : Callback {
+            @Throws(IOException::class)
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e("HTTP Error", e.message, e)
+                showResponse("Fallo: " + e.message)
+            }
 
+            @Throws(IOException::class)
+            override fun onResponse(call: Call, response: Response) {
+                response.body.use { responseBody ->
+                    if (!response.isSuccessful)
+                        showResponse(("Unexpected code " + response.code))
+                    else
+                        showResponse(response.body!!.string())
+                }
+            }
 
+        })
+    }
 
+    private fun showResponse(s: String) {
 
+        end = System.currentTimeMillis()
+        runOnUiThread {
+            binding.textView.text = "Tiempo de descarga: " + (end - start) + " ms"
+            binding.webView.loadData(s, "text/html", "UTF-8")
+        }
     }
 
     private fun download(url: URL) {
